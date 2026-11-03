@@ -1,331 +1,360 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl" id="html-root">
+<html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="page-title">داشبورد هوشمند آبیاری و مخازن آب</title>
-    <!-- Tailwind CSS CDN -->
+    <title data-i18n="page_title">سامانه هوشمند آبیاری و مخازن</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Vazirmatn', 'sans-serif'] }
+                }
+            }
         }
     </script>
-    <!-- FontAwesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Vazirmatn Font -->
-    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
-    <!-- Chart.js for Live Graph -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body {
-            font-family: 'Vazirmatn', sans-serif;
-            transition: background-color 0.3s, color 0.3s;
-        }
-        .tank-fill {
-            transition: height 0.6s ease-in-out;
-        }
-        @keyframes pulse-slow {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        .animate-pulse-slow {
-            animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
+        .tank-fill { transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col justify-between p-4 md:p-6">
-
-    <!-- Top Header -->
-    <header class="w-full max-w-6xl mx-auto bg-slate-800/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-700 rounded-2xl p-4 md:p-6 mb-6 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-            <div class="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-2xl shadow-inner">
-                <i class="fa-solid fa-seedling"></i>
-            </div>
-            <div>
-                <h1 id="header-title" class="text-xl md:text-2xl font-bold tracking-tight">سامانه هوشمند آبیاری و مخازن</h1>
-                <p id="header-sub" class="text-xs text-slate-400 mt-1">مدیریت هوشمند گلخانه خوارزمی - مخازن ۵۰۰ میلی‌لیتری</p>
-            </div>
-        </div>
-
-        <!-- Controls & Toggles -->
-        <div class="flex flex-wrap items-center gap-3">
-            <!-- Language Switcher -->
-            <button onclick="toggleLanguage()" class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 border border-slate-600 text-xs font-medium flex items-center gap-2 transition">
-                <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
-            </button>
-            <!-- Dark/Light Mode -->
-            <button onclick="toggleTheme()" class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 border border-slate-600 text-xs font-medium flex items-center gap-2 transition">
-                <i id="theme-icon" class="fa-solid fa-moon"></i> <span id="theme-btn-text">حالت روز</span>
-            </button>
-            <!-- API Status Badge -->
-            <div id="connection-badge" class="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-2 text-xs text-emerald-400">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-                <span id="status-text">متصل به (npoint.io)</span>
-            </div>
-            <!-- Refresh Button -->
-            <button onclick="fetchData()" class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 border border-slate-600 text-xs font-medium flex items-center gap-2 transition">
-                <i class="fa-solid fa-rotate-right"></i> <span id="refresh-btn-text">بروزرسانی</span>
-            </button>
-        </div>
-    </header>
-
-    <!-- Main Content Grid -->
-    <main class="w-full max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans min-h-screen transition-colors duration-300">
+    <div class="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
         
-        <!-- Tanks Section (Spans 2 cols) -->
-        <section class="bg-slate-800/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-700 rounded-2xl p-5 md:p-6 shadow-xl md:col-span-2 flex flex-col justify-between">
-            <div class="flex items-center justify-between mb-6">
-                <h2 id="tanks-heading" class="text-lg font-bold text-slate-200 flex items-center gap-2">
-                    <i class="fa-solid fa-water text-cyan-400"></i> وضعیت مخازن آب (۵۰۰ میلی‌لیتر)
-                </h2>
-                <span class="text-xs text-slate-400 bg-slate-900/80 border border-slate-700 px-2.5 py-1 rounded-lg" id="auto-mode-badge">حالت: خودکار (Auto)</span>
-            </div>
-
-            <div class="grid grid-cols-2 gap-6 my-auto">
-                <!-- Tank A (Rainwater) -->
-                <div class="bg-slate-900/60 border border-slate-700/80 rounded-xl p-4 flex flex-col items-center">
-                    <span class="text-xs font-semibold text-cyan-400 mb-3" id="tank-a-title">مخزن A (باران)</span>
-                    <div class="w-20 h-40 bg-slate-950 rounded-lg border-2 border-slate-700 relative overflow-hidden flex flex-col justify-end shadow-inner">
-                        <div id="tankA-fill" class="tank-fill w-full bg-gradient-to-t from-cyan-600 to-cyan-400" style="height: 50%;"></div>
-                        <div class="absolute inset-0 flex items-center justify-center text-xs font-bold text-white drop-shadow">
-                            <span id="tankA-pct">50%</span>
-                        </div>
-                    </div>
-                    <span id="tankA-ml" class="text-xs text-slate-400 mt-3 font-mono">۲۵۰ میلی‌لیتر</span>
+        <!-- Header -->
+        <header class="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-seedling"></i>
                 </div>
-
-                <!-- Tank B (Municipal) -->
-                <div class="bg-slate-900/60 border border-slate-700/80 rounded-xl p-4 flex flex-col items-center">
-                    <span class="text-xs font-semibold text-blue-400 mb-3" id="tank-b-title">مخزن B (آب شهر)</span>
-                    <div class="w-20 h-40 bg-slate-950 rounded-lg border-2 border-slate-700 relative overflow-hidden flex flex-col justify-end shadow-inner">
-                        <div id="tankB-fill" class="tank-fill w-full bg-gradient-to-t from-blue-600 to-blue-400" style="height: 70%;"></div>
-                        <div class="absolute inset-0 flex items-center justify-center text-xs font-bold text-white drop-shadow">
-                            <span id="tankB-pct">70%</span>
-                        </div>
-                    </div>
-                    <span id="tankB-ml" class="text-xs text-slate-400 mt-3 font-mono">۳۵۰ میلی‌لیتر</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- Sensors & Actuators Column -->
-        <div class="flex flex-col gap-6">
-            <!-- DHT11 Sensor Card -->
-            <section class="bg-slate-800/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-700 rounded-2xl p-5 shadow-xl">
-                <h3 id="dht-heading" class="text-sm font-bold text-slate-200 mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-temperature-half text-amber-400"></i> سنسور محیطی (DHT11)
-                </h3>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/60 text-center">
-                        <span class="text-xs text-slate-400 block mb-1" id="temp-label">دما</span>
-                        <span id="temp-val" class="text-xl font-bold text-amber-400 font-mono">--°C</span>
-                    </div>
-                    <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/60 text-center">
-                        <span class="text-xs text-slate-400 block mb-1" id="hum-label">رطوبت هوا</span>
-                        <span id="hum-val" class="text-xl font-bold text-blue-400 font-mono">--%</span>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Soil Moisture & Actuators -->
-            <section class="bg-slate-800/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-700 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
                 <div>
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-xs font-semibold text-slate-300" id="soil-label">رطوبت خاک</span>
-                        <span id="soil-val" class="text-xs font-bold text-emerald-400 font-mono">--%</span>
-                    </div>
-                    <div class="w-full bg-slate-950 h-3 rounded-full overflow-hidden border border-slate-700 mb-4">
-                        <div id="soil-bar" class="h-full bg-emerald-500 transition-all duration-500" style="width: 0%;"></div>
-                    </div>
+                    <h1 class="font-bold text-lg" data-i18n="main_title">سامانه هوشمند آبیاری و مخازن</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="sub_title">مدیریت گلخونه خوارزمی (ظرفیت ۵۰۰ میلی‌لیتر)</p>
                 </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <!-- Lang Toggle -->
+                <button onclick="toggleLanguage()" class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-globe"></i>
+                    <span id="lang-btn-text">EN</span>
+                </button>
+                <!-- Theme Toggle -->
+                <button onclick="toggleTheme()" class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                    <i class="fa-solid fa-moon dark:hidden text-slate-700"></i>
+                    <i class="fa-solid fa-sun hidden dark:block text-amber-400"></i>
+                </button>
+                <!-- Connection Status -->
+                <div id="connection-status" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span data-i18n="connected">متصل به ابر</span>
+                </div>
+                <button onclick="fetchData()" class="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition shadow-lg shadow-emerald-500/20" title="بروزرسانی">
+                    <i class="fa-solid fa-rotate"></i>
+                </button>
+            </div>
+        </header>
 
-                <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-700/80">
-                    <div class="flex items-center justify-between bg-slate-900/50 px-3 py-2 rounded-xl border border-slate-700/60">
-                        <span class="text-xs text-slate-300" id="pump-label">پمپ آب</span>
-                        <span id="pump-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400">نامشخص</span>
-                    </div>
-                    <div class="flex items-center justify-between bg-slate-900/50 px-3 py-2 rounded-xl border border-slate-700/60">
-                        <span class="text-xs text-slate-300" id="fan-label">فن تهویه</span>
-                        <span id="fan-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400">نامشخص</span>
-                    </div>
-                </div>
-            </section>
+        <!-- System Mode -->
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            <span class="text-sm font-medium text-slate-500 dark:text-slate-400" data-i18n="system_mode">حالت سامانه:</span>
+            <span id="system-mode-val" class="px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold">Auto</span>
         </div>
 
-        <!-- Live Trend Chart (Spans full width) -->
-        <section class="bg-slate-800/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-700 rounded-2xl p-5 md:p-6 shadow-xl md:col-span-3">
-            <h3 id="chart-heading" class="text-sm font-bold text-slate-200 mb-4 flex items-center gap-2">
-                <i class="fa-solid fa-chart-line text-emerald-400"></i> نمودار زنده تغییرات رطوبت و دما
-            </h3>
+        <!-- Water Tanks Section -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Tank A -->
+            <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 relative overflow-hidden">
+                <div class="flex justify-between items-start mb-4 relative z-10">
+                    <div>
+                        <h3 class="font-bold text-slate-700 dark:text-slate-200" data-i18n="tank_a_title">مخزن A (باران)</h3>
+                        <p class="text-xs text-slate-400" data-i18n="tank_capacity">ظرفیت کل: ۵۰۰ میلی‌لیتر</p>
+                    </div>
+                    <span id="tank-a-val" class="text-2xl font-black text-emerald-600 dark:text-emerald-400">0%</span>
+                </div>
+                <div class="w-full bg-slate-100 dark:bg-slate-800 h-28 rounded-xl relative overflow-hidden border border-slate-200 dark:border-slate-700">
+                    <div id="tank-a-fill" class="tank-fill absolute bottom-0 left-0 right-0 bg-gradient-to-t from-blue-600 to-cyan-400 opacity-80" style="height: 0%;"></div>
+                    <div class="absolute inset-0 flex items-center justify-center font-bold text-lg drop-shadow">
+                        <span id="tank-a-liters">0</span> <span data-i18n="ml">میلی‌لیتر</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tank B -->
+            <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 relative overflow-hidden">
+                <div class="flex justify-between items-start mb-4 relative z-10">
+                    <div>
+                        <h3 class="font-bold text-slate-700 dark:text-slate-200" data-i18n="tank_b_title">مخزن B (آب شهر)</h3>
+                        <p class="text-xs text-slate-400" data-i18n="tank_capacity">ظرفیت کل: ۵۰۰ میلی‌لیتر</p>
+                    </div>
+                    <span id="tank-b-val" class="text-2xl font-black text-blue-600 dark:text-blue-400">0%</span>
+                </div>
+                <div class="w-full bg-slate-100 dark:bg-slate-800 h-28 rounded-xl relative overflow-hidden border border-slate-200 dark:border-slate-700">
+                    <div id="tank-b-fill" class="tank-fill absolute bottom-0 left-0 right-0 bg-gradient-to-t from-blue-500 to-indigo-500 opacity-80" style="height: 0%;"></div>
+                    <div class="absolute inset-0 flex items-center justify-center font-bold text-lg drop-shadow">
+                        <span id="tank-b-liters">0</span> <span data-i18n="ml">میلی‌لیتر</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sensors & Actuators Grid -->
+        <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <!-- Temp -->
+            <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-400 mb-1" data-i18n="temperature">دمای محیط</p>
+                    <h4 id="dht-temp" class="text-xl font-bold">-- °C</h4>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-temperature-high"></i>
+                </div>
+            </div>
+
+            <!-- Humidity -->
+            <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-400 mb-1" data-i18n="humidity">رطوبت هوا</p>
+                    <h4 id="dht-hum" class="text-xl font-bold">-- %</h4>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-droplet"></i>
+                </div>
+            </div>
+
+            <!-- Soil Moisture -->
+            <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-400 mb-1" data-i18n="soil_moisture">رطوبت خاک</p>
+                    <h4 id="soil-moisture-val" class="text-xl font-bold">-- %</h4>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-earth-americas"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- Status Badges -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <span class="text-sm font-medium" data-i18n="water_pump">پمپ آب:</span>
+                <span id="pump-status-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-500">-</span>
+            </div>
+            <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <span class="text-sm font-medium" data-i18n="vent_fan">فن تهویه:</span>
+                <span id="fan-status-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-500">-</span>
+            </div>
+        </section>
+
+        <!-- Chart Section -->
+        <section class="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
+            <h3 class="font-bold text-slate-700 dark:text-slate-200 mb-4" data-i18n="live_chart">نمودار زنده دما و رطوبت</h3>
             <div class="w-full h-64">
-                <canvas id="liveChart"></canvas>
+                <canvas id="sensorChart"></canvas>
             </div>
         </section>
 
-        <!-- System Activity Log -->
-        <section class="bg-slate-800/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-700 rounded-2xl p-5 md:p-6 shadow-xl md:col-span-3">
-            <h3 id="log-heading" class="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-list-ul text-indigo-400"></i> لاگ وقایع و رویدادهای سیستم
+        <!-- Activity Log -->
+        <section class="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
+            <h3 class="font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-clock-rotate-left text-xs text-slate-400"></i>
+                <span data-i18n="activity_log">لاگ وقایع و رویدادهای سیستم</span>
             </h3>
-            <div id="activity-log" class="bg-slate-950 border border-slate-700/80 rounded-xl p-3 h-32 overflow-y-auto text-xs font-mono text-slate-300 flex flex-col gap-1.5">
-                <div class="text-slate-500">[ساعت سیستم] در حال راه‌اندازی سامانه هوشمند...</div>
+            <div id="activity-log" class="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl text-xs font-mono text-slate-600 dark:text-slate-400 h-28 overflow-y-auto space-y-1.5 border border-slate-200 dark:border-slate-800">
+                <div>[System] Initializing smart system...</div>
             </div>
         </section>
+    </div>
 
-    </main>
-
-    <!-- Footer -->
-    <footer class="w-full max-w-6xl mx-auto text-center text-xs text-slate-400 py-4 border-t border-slate-800">
-        <span id="footer-text">سامانه هوشمند آبیاری و کنترل مخازن • ارتباط مستقیم با API (npoint.io) • پروژه جشنواره خوارزمی</span>
-    </footer>
-
-    <!-- Script Logic -->
     <script>
         const API_URL = 'https://api.npoint.io/b9e089f8e1d3c20e670e';
         const TANK_CAPACITY_ML = 500;
         let currentLang = 'fa';
-        let currentTheme = 'dark';
+
+        const translations = {
+            fa: {
+                page_title: "سامانه هوشمند آبیاری و مخازن",
+                main_title: "سامانه هوشمند آبیاری و مخازن",
+                sub_title: "مدیریت گلخونه خوارزمی (ظرفیت ۵۰۰ میلی‌لیتر)",
+                connected: "متصل به ابر",
+                system_mode: "حالت سامانه:",
+                tank_a_title: "مخزن A (باران)",
+                tank_b_title: "مخزن B (آب شهر)",
+                tank_capacity: "ظرفیت کل: ۵۰۰ میلی‌لیتر",
+                ml: "میلی‌لیتر",
+                temperature: "دمای محیط",
+                humidity: "رطوبت هوا",
+                soil_moisture: "رطوبت خاک",
+                water_pump: "پمپ آب:",
+                vent_fan: "فن تهویه:",
+                live_chart: "نمودار زنده دما و رطوبت",
+                activity_log: "لاگ وقایع و رویدادهای سیستم",
+                on: "روشن",
+                off: "خاموش",
+                auto: "خودکار (Auto)",
+                manual: "دستی (Manual)",
+                log_success: "اطلاعات با موفقیت از ابر دریافت شد.",
+                log_init: "سامانه هوشمند با موفقیت راه‌اندازی شد."
+            },
+            en: {
+                page_title: "Smart Irrigation & Tank System",
+                main_title: "Smart Irrigation & Tank System",
+                sub_title: "Kharazmi Greenhouse (500ml Capacity)",
+                connected: "Cloud Connected",
+                system_mode: "System Mode:",
+                tank_a_title: "Tank A (Rain)",
+                tank_b_title: "Tank B (Municipal)",
+                tank_capacity: "Total Capacity: 500 ml",
+                ml: "ml",
+                temperature: "Temperature",
+                humidity: "Air Humidity",
+                soil_moisture: "Soil Moisture",
+                water_pump: "Water Pump:",
+                vent_fan: "Ventilation Fan:",
+                live_chart: "Live Temp & Humidity Chart",
+                activity_log: "System Activity & Event Log",
+                on: "ON",
+                off: "OFF",
+                auto: "Auto",
+                manual: "Manual",
+                log_success: "Data successfully fetched from cloud.",
+                log_init: "Smart system initialized successfully."
+            }
+        };
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'fa' ? 'en' : 'fa';
+            document.documentElement.lang = currentLang;
+            document.documentElement.dir = currentLang === 'fa' ? 'rtl' : 'ltr';
+            document.getElementById('lang-btn-text').innerText = currentLang === 'fa' ? 'EN' : 'FA';
+            
+            // Translate static elements
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[currentLang][key]) {
+                    el.innerText = translations[currentLang][key];
+                }
+            });
+            fetchData();
+        }
+
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+        }
 
         // Chart.js Setup
-        const ctx = document.getElementById('liveChart').getContext('2d');
-        const liveChart = new Chart(ctx, {
+        const ctx = document.getElementById('sensorChart').getContext('2d');
+        const sensorChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: [],
                 datasets: [
-                    { label: 'دما (°C)', data: [], borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', tension: 0.3, fill: true },
-                    { label: 'رطوبت هوا (%)', data: [], borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', tension: 0.3, fill: true },
-                    { label: 'رطوبت خاک (%)', data: [], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.3, fill: true }
+                    { label: 'Temperature (°C)', data: [], borderColor: '#f59e0b', backgroundColor: '#f59e0b22', tension: 0.3 },
+                    { label: 'Air Humidity (%)', data: [], borderColor: '#3b82f6', backgroundColor: '#3b82f622', tension: 0.3 },
+                    { label: 'Soil Moisture (%)', data: [], borderColor: '#10b981', backgroundColor: '#10b98122', tension: 0.3 }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                scales: {
-                    y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } },
-                    x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } }
-                },
-                plugins: { legend: { labels: { color: '#cbd5e1', font: { family: 'Vazirmatn' } } } }
+                scales: { y: { beginAtZero: true, max: 100 } }
             }
         });
 
-        function addLog(msg) {
+        function addLog(message) {
             const logBox = document.getElementById('activity-log');
             const timeStr = new Date().toLocaleTimeString();
             const div = document.createElement('div');
-            div.innerHTML = `<span class="text-slate-500">[${timeStr}]</span> ${msg}`;
+            div.textContent = `[${timeStr}] ${message}`;
             logBox.prepend(div);
+        }
+
+        function pick(obj, keys) {
+            for (const k of keys) {
+                if (obj && obj[k] !== undefined && obj[k] !== null) return obj[k];
+            }
+            return null;
+        }
+
+        function toNum(val, def = 0) {
+            const n = Number(val);
+            return isNaN(n) ? def : n;
+        }
+
+        function toBool(val) {
+            if (typeof val === 'boolean') return val;
+            if (typeof val === 'number') return val !== 0;
+            if (typeof val === 'string') {
+                const s = val.toLowerCase().trim();
+                return s === 'true' || s === '1' || s === 'on' || s === 'yes' || s === 'روشن';
+            }
+            return false;
         }
 
         async function fetchData() {
             try {
-                const response = await fetch(API_URL);
+                const response = await fetch(API_URL, { cache: 'no-store' });
+                if (!response.ok) throw new Error('HTTP ' + response.status);
                 const data = await response.json();
-                
-                const tankA = Number(data.tankA ?? data.tank_a ?? 50);
-                const tankB = Number(data.tankB ?? data.tank_b ?? 70);
-                const soil = Number(data.soilMoisture ?? data.soil_moisture ?? 45);
-                const temp = Number(data.temperature ?? data.temp ?? 25);
-                const hum = Number(data.humidity ?? data.hum ?? 60);
-                const pump = Boolean(data.pumpStatus ?? data.pump ?? false);
-                const fan = Boolean(data.fanStatus ?? data.fan ?? false);
 
-                // Update Tanks
-                document.getElementById('tankA-fill').style.height = tankA + '%';
-                document.getElementById('tankA-pct').innerText = tankA + '%';
-                document.getElementById('tankA-ml').innerText = Math.round((tankA / 100) * TANK_CAPACITY_ML) + (currentLang === 'fa' ? ' میلی‌لیتر' : ' mL');
+                const tA = Math.max(0, Math.min(100, toNum(pick(data, ['tankA', 'tank_a', 'tank1']))));
+                const tB = Math.max(0, Math.min(100, toNum(pick(data, ['tankB', 'tank_b', 'tank2']))));
+                const temp = toNum(pick(data, ['temperature', 'temp']), 25);
+                const hum = toNum(pick(data, ['humidity', 'hum']), 50);
+                const soil = toNum(pick(data, ['soilMoisture', 'soil_moisture', 'soil']), 40);
+                const pump = toBool(pick(data, ['pumpStatus', 'pump_status', 'pump']));
+                const fan = toBool(pick(data, ['fanStatus', 'fan_status', 'fan']));
+                const mode = pick(data, ['mode', 'system_mode']) || 'Auto';
 
-                document.getElementById('tankB-fill').style.height = tankB + '%';
-                document.getElementById('tankB-pct').innerText = tankB + '%';
-                document.getElementById('tankB-ml').innerText = Math.round((tankB / 100) * TANK_CAPACITY_ML) + (currentLang === 'fa' ? ' میلی‌لیتر' : ' mL');
+                // Update UI Tank A
+                document.getElementById('tank-a-val').innerText = tA + '%';
+                document.getElementById('tank-a-fill').style.height = tA + '%';
+                document.getElementById('tank-a-liters').innerText = Math.round((tA * TANK_CAPACITY_ML) / 100);
+
+                // Update UI Tank B
+                document.getElementById('tank-b-val').innerText = tB + '%';
+                document.getElementById('tank-b-fill').style.height = tB + '%';
+                document.getElementById('tank-b-liters').innerText = Math.round((tB * TANK_CAPACITY_ML) / 100);
 
                 // Update Sensors
-                document.getElementById('temp-val').innerText = temp + '°C';
-                document.getElementById('hum-val').innerText = hum + '%';
-                document.getElementById('soil-val').innerText = soil + '%';
-                document.getElementById('soil-bar').style.width = soil + '%';
+                document.getElementById('dht-temp').innerText = temp + ' °C';
+                document.getElementById('dht-hum').innerText = hum + ' %';
+                document.getElementById('soil-moisture-val').innerText = soil + ' %';
+                document.getElementById('system-mode-val').innerText = mode;
 
-                // Update Actuators
-                const pumpBadge = document.getElementById('pump-badge');
-                pumpBadge.innerText = pump ? (currentLang === 'fa' ? 'روشن' : 'ON') : (currentLang === 'fa' ? 'خاموش' : 'OFF');
-                pumpBadge.className = `px-2 py-0.5 rounded text-[10px] font-bold ${pump ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'}`;
+                // Update Pump Badge
+                const pumpBadge = document.getElementById('pump-status-badge');
+                pumpBadge.innerText = pump ? translations[currentLang].on : translations[currentLang].off;
+                pumpBadge.className = `px-3 py-1 rounded-full text-xs font-bold ${pump ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`;
 
-                const fanBadge = document.getElementById('fan-badge');
-                fanBadge.innerText = fan ? (currentLang === 'fa' ? 'روشن' : 'ON') : (currentLang === 'fa' ? 'خاموش' : 'OFF');
-                fanBadge.className = `px-2 py-0.5 rounded text-[10px] font-bold ${fan ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'bg-slate-800 text-slate-400'}`;
+                // Update Fan Badge
+                const fanBadge = document.getElementById('fan-status-badge');
+                fanBadge.innerText = fan ? translations[currentLang].on : translations[currentLang].off;
+                fanBadge.className = `px-3 py-1 rounded-full text-xs font-bold ${fan ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`;
 
                 // Update Chart
-                const nowTime = new Date().toLocaleTimeString();
-                if (liveChart.data.labels.length > 10) {
-                    liveChart.data.labels.shift();
-                    liveChart.data.datasets.forEach(dataset => dataset.data.shift());
+                const timeLabel = new Date().toLocaleTimeString();
+                if (sensorChart.data.labels.length > 10) {
+                    sensorChart.data.labels.shift();
+                    sensorChart.data.datasets.forEach(d => d.data.shift());
                 }
-                liveChart.data.labels.push(nowTime);
-                liveChart.data.datasets[0].data.push(temp);
-                liveChart.data.datasets[1].data.push(hum);
-                liveChart.data.datasets[2].data.push(soil);
-                liveChart.update();
+                sensorChart.data.labels.push(timeLabel);
+                sensorChart.data.datasets[0].data.push(temp);
+                sensorChart.data.datasets[1].data.push(hum);
+                sensorChart.data.datasets[2].data.push(soil);
+                sensorChart.update();
 
-                addLog(currentLang === 'fa' ? 'اطلاعات با موفقیت از ابر دریافت شد.' : 'Data successfully fetched from cloud.');
-
-            } catch (err) {
-                console.error(err);
-                addLog(currentLang === 'fa' ? 'خطا در ارتباط با سرور!' : 'Connection error!');
+                addLog(translations[currentLang].log_success);
+            } catch (error) {
+                console.error(error);
+                addLog('Error fetching data: ' + error.message);
             }
         }
 
-        function toggleTheme() {
-            const root = document.getElementById('html-root');
-            const themeIcon = document.getElementById('theme-icon');
-            const themeBtnText = document.getElementById('theme-btn-text');
-            
-            if (currentTheme === 'dark') {
-                root.classList.remove('dark');
-                // Switch to light theme classes
-                document.body.classList.replace('bg-slate-900', 'bg-slate-100');
-                document.body.classList.replace('text-slate-100', 'text-slate-900');
-                themeIcon.className = 'fa-solid fa-sun text-amber-500';
-                themeBtnText.innerText = currentLang === 'fa' ? 'حالت شب' : 'Dark Mode';
-                currentTheme = 'light';
-            } else {
-                root.classList.add('dark');
-                document.body.classList.replace('bg-slate-100', 'bg-slate-900');
-                document.body.classList.replace('text-slate-900', 'text-slate-100');
-                themeIcon.className = 'fa-solid fa-moon';
-                themeBtnText.innerText = currentLang === 'fa' ? 'حالت روز' : 'Light Mode';
-                currentTheme = 'dark';
-            }
-        }
-
-        function toggleLanguage() {
-            currentLang = currentLang === 'fa' ? 'en' : 'fa';
-            const root = document.getElementById('html-root');
-            root.setAttribute('lang', currentLang);
-            root.setAttribute('dir', currentLang === 'fa' ? 'rtl' : 'ltr');
-
-            document.getElementById('lang-btn-text').innerText = currentLang === 'fa' ? 'English' : 'فارسی';
-            document.getElementById('header-title').innerText = currentLang === 'fa' ? 'سامانه هوشمند آبیاری و مخازن' : 'Smart Irrigation & Tank System';
-            document.getElementById('header-sub').innerText = currentLang === 'fa' ? 'مدیریت هوشمند گلخانه خوارزمی - مخازن ۵۰۰ میلی‌لیتری' : 'Kharazmi Smart Greenhouse - 500ml Tanks';
-            document.getElementById('tanks-heading').innerHTML = `<i class="fa-solid fa-water text-cyan-400"></i> ${currentLang === 'fa' ? 'وضعیت مخازن آب (۵۰۰ میلی‌لیتر)' : 'Water Tanks Status (500ml)'}`;
-            document.getElementById('tank-a-title').innerText = currentLang === 'fa' ? 'مخزن A (باران)' : 'Tank A (Rain)';
-            document.getElementById('tank-b-title').innerText = currentLang === 'fa' ? 'مخزن B (آب شهر)' : 'Tank B (City)';
-            document.getElementById('dht-heading').innerHTML = `<i class="fa-solid fa-temperature-half text-amber-400"></i> ${currentLang === 'fa' ? 'سنسور محیطی (DHT11)' : 'Environmental Sensor (DHT11)'}`;
-            document.getElementById('temp-label').innerText = currentLang === 'fa' ? 'دما' : 'Temperature';
-            document.getElementById('hum-label').innerText = currentLang === 'fa' ? 'رطوبت هوا' : 'Air Humidity';
-            document.getElementById('soil-label').innerText = currentLang === 'fa' ? 'رطوبت خاک' : 'Soil Moisture';
-            document.getElementById('pump-label').innerText = currentLang === 'fa' ? 'پمپ آب' : 'Water Pump';
-            document.getElementById('fan-label').innerText = currentLang === 'fa' ? 'فن تهویه' : 'Ventilation Fan';
-            document.getElementById('chart-heading').innerHTML = `<i class="fa-solid fa-chart-line text-emerald-400"></i> ${currentLang === 'fa' ? 'نمودار زنده تغییرات رطوبت و دما' : 'Live Temperature & Humidity Chart'}`;
-            document.getElementById('log-heading').innerHTML = `<i class="fa-solid fa-list-ul text-indigo-400"></i> ${currentLang === 'fa' ? 'لاگ وقایع و رویدادهای سیستم' : 'System Activity Log'}`;
-            document.getElementById('footer-text').innerText = currentLang === 'fa' ? 'سامانه هوشمند آبیاری و کنترل مخازن • ارتباط مستقیم با API (npoint.io) • پروژه جشنواره خوارزمی' : 'Smart Irrigation System • Direct API (npoint.io) • Kharazmi Festival Project';
-            document.getElementById('status-text').innerText = currentLang === 'fa' ? 'متصل به (npoint.io)' : 'Connected to (npoint.io)';
-            document.getElementById('refresh-btn-text').innerText = currentLang === 'fa' ? 'بروزرسانی' : 'Refresh';
-
-            addLog(currentLang === 'fa' ? 'زبان به فارسی تغییر یافت.' : 'Language changed to English.');
-        }
-
-        // Initial fetch & Auto-poll every 5 seconds
         fetchData();
         setInterval(fetchData, 5000);
     </script>
